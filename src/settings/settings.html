@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Mesh — Settings</title>
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Mesh Settings</h1>
+    <p class="subtitle">All settings are stored locally. No data leaves your device.</p>
+
+    <section>
+      <h2>General</h2>
+      <label class="row">
+        <span>Enable Privacy Mesh</span>
+        <input type="checkbox" id="enabled" />
+      </label>
+    </section>
+
+    <section>
+      <h2>Sensitivity</h2>
+      <div class="radio-group">
+        <label><input type="radio" name="sensitivity" value="strict" /> Strict</label>
+        <label><input type="radio" name="sensitivity" value="balanced" checked /> Balanced (default)</label>
+        <label><input type="radio" name="sensitivity" value="light" /> Light</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>PII Detectors</h2>
+      <div id="detector-toggles" class="detector-grid">
+        <!-- Populated by settings.js -->
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="save">Save Settings</button>
+      <span id="save-status"></span>
+    </div>
+  </div>
+  <script src="settings.js"></script>
+</body>
+</html>

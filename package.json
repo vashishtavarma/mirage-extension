@@ -1,0 +1,30 @@
+{
+  "name": "privacy-mesh",
+  "version": "0.1.0",
+  "description": "Real-time PII redaction between you and AI chat providers. Everything runs locally.",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --watch --mode development",
+    "build": "cross-env NODE_ENV=production webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "lint": "eslint src --ext .js",
+    "lint:fix": "eslint src --ext .js --fix",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^14.0.0",
+    "cross-env": "^7.0.3",
+    "css-loader": "^7.1.4",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "jest": "^29.7.0",
+    "prettier": "^3.8.3",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
+  },
+  "dependencies": {
+    "webextension-polyfill": "^0.12.0"
+  }
+}
