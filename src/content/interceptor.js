@@ -12,34 +12,40 @@ if (!platform) {
 }
 
 function init() {
-  // Wait for the textarea to appear (SPAs load async)
   waitForTextarea().then((textarea) => {
-    console.log('[PrivacyMesh] Textarea found, attaching interceptors');
+    console.log('[PrivacyMesh] Textarea found:', textarea.tagName, textarea.className.slice(0, 60));
     initBadge(textarea);
     attachKeyboardInterceptor(textarea);
     attachClickInterceptor();
-  });
+  }).catch((err) => console.error(err.message));
 }
+
+// --- Re-entry guard — prevents our resume callbacks from being re-intercepted ---
+let isProcessing = false;
 
 // --- Submit interception ---
 
 function attachKeyboardInterceptor(textarea) {
-  // Intercept Enter (without Shift) as submit
   textarea.addEventListener(
     'keydown',
     async (event) => {
-      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-        const prompt = platform.getPromptText(textarea);
-        if (!prompt.trim()) return;
+      if (isProcessing) return;
+      if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
 
-        event.preventDefault();
-        event.stopImmediatePropagation();
+      const prompt = platform.getPromptText(textarea);
+      if (!prompt.trim()) return;
 
-        await interceptAndSubmit(prompt, textarea, () => {
-          // Simulate Enter after sanitization is applied
-          textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: false }));
-        });
-      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      isProcessing = true;
+      await interceptAndSubmit(prompt, textarea, () => {
+        // Dispatch a full keyboard Enter directly on the editor div.
+        // isProcessing stays true during dispatch so our own listener skips it;
+        // ProseMirror / the platform's own keydown handler sees it and submits.
+        dispatchEnter(textarea);
+        isProcessing = false;
+      });
     },
     true // capture phase — fires before the platform's own handlers
   );
@@ -49,6 +55,7 @@ function attachClickInterceptor() {
   document.addEventListener(
     'click',
     async (event) => {
+      if (isProcessing) return;
       if (!platform.isSubmitEvent(event)) return;
 
       const textarea = platform.getTextarea();
@@ -60,37 +67,58 @@ function attachClickInterceptor() {
       event.preventDefault();
       event.stopImmediatePropagation();
 
+      isProcessing = true;
       await interceptAndSubmit(prompt, textarea, () => {
-        // Re-click submit after text is replaced
         const btn = platform.getSubmitButton();
-        if (btn) btn.click();
+        if (btn) {
+          // Dispatch a real-looking MouseEvent — React's delegated listener picks it up.
+          btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        }
+        isProcessing = false;
       });
     },
     true // capture phase
   );
 }
 
+// Dispatch a full Enter keydown that the host editor (ProseMirror, etc.) will
+// process as a real submit. Must be called while isProcessing = true so our
+// own capture listener ignores it.
+function dispatchEnter(target) {
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      which: 13,
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      view: window,
+    })
+  );
+}
+
 async function interceptAndSubmit(prompt, textarea, resume) {
-  console.log('[PrivacyMesh] Intercepted prompt, sending to service worker...');
+  console.log(`[PrivacyMesh] Intercepted: "${prompt.slice(0, 60)}${prompt.length > 60 ? '…' : ''}"`);
 
   let result;
   try {
     result = await sendToBackground(MSG.SANITIZE_PROMPT, { prompt });
   } catch (err) {
-    console.error('[PrivacyMesh] Service worker error, sending original prompt:', err);
-    resume();
+    console.error('[PrivacyMesh] Service worker unreachable, sending original:', err.message);
+    resume(); // resume keeps isProcessing=true through btn.click(), then resets
     return;
   }
 
   const { sanitizedPrompt, piiCount, detections } = result;
-
   updateBadge(piiCount, detections);
 
   if (sanitizedPrompt !== prompt) {
     platform.setPromptText(textarea, sanitizedPrompt);
   }
 
-  console.log(`[PrivacyMesh] Sanitized. PII items redacted: ${piiCount}. Resuming submit.`);
+  console.log(`[PrivacyMesh] Done. PII redacted: ${piiCount}. Resuming submit.`);
   resume();
 }
 

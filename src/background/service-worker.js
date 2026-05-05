@@ -1,68 +1,86 @@
 import { MSG } from '../shared/messages.js';
-import { clearTokenMap } from './token-store.js';
+import { clearTokenMap, getTokenMap, mergeTokenMap } from './token-store.js';
+import { detectPII } from '../engine/pii-detector.js';
+import { anonymize } from '../engine/anonymizer.js';
+import { scanResponse } from '../engine/response-scanner.js';
 
-// --- Message Router ---
+// --- Port-based message router (keeps SW alive for the full async call) ---
 
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'privacymesh') return;
+
+  port.onMessage.addListener(async (message) => {
+    if (!message || !message.type) return;
+    try {
+      const result = await handleMessage(message, port.sender);
+      port.postMessage(result);
+    } catch (err) {
+      console.error('[PrivacyMesh SW] Error:', err);
+      try { port.postMessage({ error: err.message }); } catch (_) {}
+    }
+  });
+});
+
+// Keep legacy sendMessage support for popup / settings pages
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.type) return false;
-
-  handleMessage(message, sender)
-    .then(sendResponse)
-    .catch((err) => {
-      console.error('[PrivacyMesh SW] Error handling message:', err);
-      sendResponse({ error: err.message });
-    });
-
-  // Return true to keep the message channel open for async response
+  handleMessage(message, sender).then(sendResponse).catch((err) => sendResponse({ error: err.message }));
   return true;
 });
 
 async function handleMessage(message, sender) {
   const { type, payload } = message;
-
   switch (type) {
-    case MSG.SANITIZE_PROMPT:
-      return handleSanitizePrompt(payload, sender);
-
-    case MSG.SCAN_RESPONSE:
-      return handleScanResponse(payload, sender);
-
-    case MSG.GET_SETTINGS:
-      return handleGetSettings();
-
-    case MSG.GET_SESSION_STATS:
-      return handleGetSessionStats(sender);
-
-    default:
-      console.warn('[PrivacyMesh SW] Unknown message type:', type);
-      return { error: `Unknown message type: ${type}` };
+    case MSG.SANITIZE_PROMPT:   return handleSanitizePrompt(payload, sender);
+    case MSG.SCAN_RESPONSE:     return handleScanResponse(payload, sender);
+    case MSG.GET_SETTINGS:      return handleGetSettings();
+    case MSG.GET_SESSION_STATS: return handleGetSessionStats();
+    default: return { error: `Unknown message type: ${type}` };
   }
 }
 
-// --- Handlers (stubs — filled in Phase 2/4) ---
+// --- Handlers ---
 
 async function handleSanitizePrompt(payload, sender) {
   const { prompt } = payload;
-  const tabId = sender.tab?.id;
+  const tabId = sender?.tab?.id;
+  const t0 = Date.now();
 
-  console.log(`[PrivacyMesh SW] INTERCEPTED prompt from tab ${tabId} (${prompt.length} chars)`);
+  const settings = await handleGetSettings();
 
-  // Phase 1 stub: pass prompt through unchanged, no PII detection yet
+  if (settings.enabled === false) {
+    return { type: MSG.SANITIZE_RESULT, sanitizedPrompt: prompt, tokenMap: {}, piiCount: 0, detections: [] };
+  }
+
+  const detections = await detectPII(prompt, settings);
+  const { sanitized, tokenMap } = anonymize(prompt, detections);
+
+  if (Object.keys(tokenMap).length && tabId) {
+    await mergeTokenMap(tabId, tokenMap);
+  }
+
+  await incrementStats(detections.length);
+
+  const elapsed = Date.now() - t0;
+  console.log(`[PrivacyMesh SW] Scanned ${prompt.length} chars — ${detections.length} PII found — ${elapsed}ms`);
+
   return {
     type: MSG.SANITIZE_RESULT,
-    sanitizedPrompt: prompt,
-    tokenMap: {},
-    piiCount: 0,
-    detections: [],
+    sanitizedPrompt: sanitized,
+    tokenMap,
+    piiCount: detections.length,
+    detections,
+    elapsedMs: elapsed,
   };
 }
 
 async function handleScanResponse(payload, sender) {
   const { responseText } = payload;
-  console.log(`[PrivacyMesh SW] Scanning response (${responseText.length} chars)`);
-
-  // Phase 2 stub
-  return { type: MSG.SCAN_RESULT, piiEchoDetected: false, warnings: [] };
+  const tabId = sender?.tab?.id;
+  const tokenMap = tabId ? await getTokenMap(tabId) : {};
+  const { echoDetected, warnings } = scanResponse(responseText, tokenMap);
+  if (warnings.length) console.warn('[PrivacyMesh SW] Response scan warnings:', warnings);
+  return { type: MSG.SCAN_RESULT, echoDetected, warnings };
 }
 
 async function handleGetSettings() {
@@ -70,42 +88,39 @@ async function handleGetSettings() {
   return result.settings || getDefaultSettings();
 }
 
-async function handleGetSessionStats(sender) {
-  const tabId = sender.tab?.id;
+async function handleGetSessionStats() {
   const result = await chrome.storage.local.get('session_stats');
-  const stats = result.session_stats || { promptsProcessed: 0, piiCaught: 0 };
-  return { type: MSG.SESSION_STATS_RESULT, tabId, stats };
+  return { type: MSG.SESSION_STATS_RESULT, stats: result.session_stats || { promptsProcessed: 0, piiCaught: 0 } };
 }
+
+// --- Helpers ---
 
 function getDefaultSettings() {
   return {
     enabled: true,
     sensitivity: 'balanced',
     detectors: {
-      EMAIL: true,
-      PHONE: true,
-      SSN: true,
-      CREDIT_CARD: true,
-      IP_ADDRESS: true,
-      DATE_OF_BIRTH: true,
-      IBAN: true,
-      PASSPORT: true,
-      PERSON: true,
-      ORGANIZATION: true,
-      LOCATION: true,
+      EMAIL: true, PHONE: true, SSN: true, CREDIT_CARD: true,
+      IP_ADDRESS: true, DATE_OF_BIRTH: true, IBAN: true, PASSPORT: true,
+      API_KEY: true, PERSON: true, ORGANIZATION: true, LOCATION: true,
     },
   };
 }
 
+async function incrementStats(piiCount) {
+  const result = await chrome.storage.local.get('session_stats');
+  const stats = result.session_stats || { promptsProcessed: 0, piiCaught: 0 };
+  stats.promptsProcessed += 1;
+  stats.piiCaught += piiCount;
+  await chrome.storage.local.set({ session_stats: stats });
+}
+
 // --- Lifecycle ---
 
-// Clear token map when a tab is closed to prevent stale PII tokens
 chrome.tabs.onRemoved.addListener((tabId) => {
-  clearTokenMap(tabId).catch((err) =>
-    console.error('[PrivacyMesh SW] Failed to clear token map for tab', tabId, err)
-  );
+  clearTokenMap(tabId).catch(console.error);
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('[PrivacyMesh SW] Installed and ready.');
+  console.log('[PrivacyMesh SW] Installed.');
 });
