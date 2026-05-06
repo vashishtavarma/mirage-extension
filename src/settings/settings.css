@@ -174,3 +174,9 @@ input:checked + .slider::before { transform: translateX(16px); }
 #save-status { font-size: 12px; color: var(--green); }
 .error-msg   { color: #dc2626; font-size: 12px; margin-top: 8px; min-height: 18px; }
 .empty-msg   { color: var(--lg); font-size: 13px; font-style: italic; padding: 16px 0; }
+.hidden      { display: none; }
+.row-mt      { margin-top: 16px; }
+.badge-power {
+  font-size: 10px; background: #334155; color: #FFFFFF;
+  padding: 1px 6px; border-radius: 3px; margin-left: 4px;
+}

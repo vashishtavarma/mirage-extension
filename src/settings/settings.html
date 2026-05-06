@@ -58,7 +58,7 @@
           <input type="number" id="retention" min="1" max="365" value="30" class="input-sm" />
         </div>
 
-        <div class="row" style="margin-top:16px;">
+        <div class="row row-mt">
           <div>
             <div class="row-label">Clipboard Guard</div>
             <div class="row-sub">Warn when pasted content contains PII before it enters the editor</div>
@@ -74,14 +74,14 @@
         </div>
         <div class="row">
           <div>
-            <div class="row-label">Synthetic Replacement <span style="font-size:10px;background:#334155;padding:1px 6px;border-radius:3px;margin-left:4px;">Power user</span></div>
+            <div class="row-label">Synthetic Replacement <span class="badge-power">Power user</span></div>
             <div class="row-sub">Replace PII with realistic fake values instead of [TOKEN] placeholders</div>
           </div>
           <label class="toggle"><input type="checkbox" id="synthetic-mode" /><span class="slider"></span></label>
         </div>
         <div class="row">
           <div>
-            <div class="row-label">Timing Jitter <span style="font-size:10px;background:#334155;padding:1px 6px;border-radius:3px;margin-left:4px;">Power user</span></div>
+            <div class="row-label">Timing Jitter <span class="badge-power">Power user</span></div>
             <div class="row-sub">Add ±200ms random delay to submission to prevent timing analysis</div>
           </div>
           <label class="toggle"><input type="checkbox" id="timing-jitter" /><span class="slider"></span></label>
@@ -161,7 +161,7 @@
             </tr></thead>
             <tbody id="audit-body"></tbody>
           </table>
-          <div id="audit-empty" class="empty-msg" style="display:none">No entries yet.</div>
+          <div id="audit-empty" class="empty-msg hidden">No entries yet.</div>
         </div>
       </section>
 
