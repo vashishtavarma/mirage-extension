@@ -1,5 +1,15 @@
 import { sendToBackground, MSG } from '../shared/messages.js';
 
+const SUPPORTED_HOSTS = ['claude.ai', 'chat.openai.com', 'gemini.google.com'];
+
+async function sendToTab(tabId, message) {
+  try {
+    await chrome.tabs.sendMessage(tabId, message);
+  } catch {
+    // Content script not present on this tab — silently ignore
+  }
+}
+
 async function init() {
   const toggle = document.getElementById('enabled-toggle');
   const promptsEl = document.getElementById('prompts-processed');
@@ -17,33 +27,33 @@ async function init() {
     await chrome.storage.sync.set({ settings: { ...current, enabled: toggle.checked } });
   });
 
-  // Load session stats
+  // Session stats
   const result = await chrome.storage.local.get('session_stats').catch(() => ({}));
   const stats = result.session_stats || { promptsProcessed: 0, piiCaught: 0 };
   promptsEl.textContent = stats.promptsProcessed;
   piiEl.textContent = stats.piiCaught;
+
+  // Show whether current tab is supported
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const isSupported = tab?.url && SUPPORTED_HOSTS.some((h) => tab.url.includes(h));
+  sidebarBtn.disabled = !isSupported;
+  diffBtn.disabled = !isSupported;
+  if (!isSupported) {
+    sidebarBtn.title = 'Open a supported AI chat tab first';
+    diffBtn.title = 'Open a supported AI chat tab first';
+  }
 
   settingsLink.addEventListener('click', (e) => {
     e.preventDefault();
     chrome.runtime.openOptionsPage();
   });
 
-  // Open sidebar in the active tab's content script
   sidebarBtn.addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_SIDEBAR' });
-      window.close();
-    }
+    if (tab?.id) { await sendToTab(tab.id, { type: 'TOGGLE_SIDEBAR' }); window.close(); }
   });
 
-  // Show last diff
   diffBtn.addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      chrome.tabs.sendMessage(tab.id, { type: 'SHOW_DIFF' });
-      window.close();
-    }
+    if (tab?.id) { await sendToTab(tab.id, { type: 'SHOW_DIFF' }); window.close(); }
   });
 }
 

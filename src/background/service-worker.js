@@ -3,6 +3,7 @@ import { clearTokenMap, getTokenMap, mergeTokenMap } from './token-store.js';
 import { detectPII } from '../engine/pii-detector.js';
 import { anonymize } from '../engine/anonymizer.js';
 import { scanResponse } from '../engine/response-scanner.js';
+import { logScan, getLog, clearLog, exportLog } from './audit-log.js';
 
 // --- Port-based message router (keeps SW alive for the full async call) ---
 
@@ -35,6 +36,9 @@ async function handleMessage(message, sender) {
     case MSG.SCAN_RESPONSE:     return handleScanResponse(payload, sender);
     case MSG.GET_SETTINGS:      return handleGetSettings();
     case MSG.GET_SESSION_STATS: return handleGetSessionStats();
+    case MSG.GET_AUDIT_LOG:    return { log: await getLog() };
+    case MSG.CLEAR_AUDIT_LOG:  await clearLog(); return { ok: true };
+    case MSG.EXPORT_AUDIT_LOG: return { json: await exportLog() };
     default: return { error: `Unknown message type: ${type}` };
   }
 }
@@ -52,6 +56,14 @@ async function handleSanitizePrompt(payload, sender) {
     return { type: MSG.SANITIZE_RESULT, sanitizedPrompt: prompt, tokenMap: {}, piiCount: 0, detections: [] };
   }
 
+  // Skip if the tab's domain is in the allowlist
+  const domain = sender?.tab?.url ? new URL(sender.tab.url).hostname : '';
+  const allowlist = await getAllowlist();
+  if (allowlist.some((d) => domain.includes(d))) {
+    console.log(`[PrivacyMesh SW] Domain ${domain} is allowlisted — skipping scan`);
+    return { type: MSG.SANITIZE_RESULT, sanitizedPrompt: prompt, tokenMap: {}, piiCount: 0, detections: [] };
+  }
+
   const detections = await detectPII(prompt, settings);
   const { sanitized, tokenMap } = anonymize(prompt, detections);
 
@@ -63,6 +75,9 @@ async function handleSanitizePrompt(payload, sender) {
 
   const elapsed = Date.now() - t0;
   console.log(`[PrivacyMesh SW] Scanned ${prompt.length} chars — ${detections.length} PII found — ${elapsed}ms`);
+
+  // Write to audit log (fire-and-forget, never blocks the response)
+  logScan({ prompt, detections, elapsedMs: elapsed, domain }).catch(console.error);
 
   return {
     type: MSG.SANITIZE_RESULT,
@@ -86,6 +101,11 @@ async function handleScanResponse(payload, sender) {
 async function handleGetSettings() {
   const result = await chrome.storage.sync.get('settings');
   return result.settings || getDefaultSettings();
+}
+
+async function getAllowlist() {
+  const result = await chrome.storage.sync.get('domainAllowlist');
+  return result.domainAllowlist || [];
 }
 
 async function handleGetSessionStats() {

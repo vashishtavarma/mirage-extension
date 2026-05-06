@@ -7,38 +7,138 @@
   <link rel="stylesheet" href="settings.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Privacy Mesh Settings</h1>
-    <p class="subtitle">All settings are stored locally. No data leaves your device.</p>
+  <div class="layout">
+    <aside class="nav">
+      <div class="nav-logo">Privacy Mesh</div>
+      <a href="#general"   class="nav-item active">General</a>
+      <a href="#detectors" class="nav-item">PII Detectors</a>
+      <a href="#profiles"  class="nav-item">Profiles</a>
+      <a href="#custom"    class="nav-item">Custom Rules</a>
+      <a href="#allowlist" class="nav-item">Domain Allowlist</a>
+      <a href="#audit"     class="nav-item">Audit Log</a>
+    </aside>
 
-    <section>
-      <h2>General</h2>
-      <label class="row">
-        <span>Enable Privacy Mesh</span>
-        <input type="checkbox" id="enabled" />
-      </label>
-    </section>
+    <main class="content">
 
-    <section>
-      <h2>Sensitivity</h2>
-      <div class="radio-group">
-        <label><input type="radio" name="sensitivity" value="strict" /> Strict</label>
-        <label><input type="radio" name="sensitivity" value="balanced" checked /> Balanced (default)</label>
-        <label><input type="radio" name="sensitivity" value="light" /> Light</label>
+      <!-- GENERAL -->
+      <section id="general" class="section">
+        <h2>General</h2>
+        <div class="row">
+          <div>
+            <div class="row-label">Enable Privacy Mesh</div>
+            <div class="row-sub">Intercept and redact PII on supported AI platforms</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field">
+          <label class="field-label">Sensitivity</label>
+          <div class="radio-row">
+            <label class="radio-card">
+              <input type="radio" name="sensitivity" value="strict" />
+              <span class="rc-title">Strict</span>
+              <span class="rc-desc">All regex + all NER hits</span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="sensitivity" value="balanced" />
+              <span class="rc-title">Balanced</span>
+              <span class="rc-desc">Regex + high-confidence NER</span>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="sensitivity" value="light" />
+              <span class="rc-title">Light</span>
+              <span class="rc-desc">Regex only, NER disabled</span>
+            </label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label" for="retention">Audit log retention (days)</label>
+          <input type="number" id="retention" min="1" max="365" value="30" class="input-sm" />
+        </div>
+      </section>
+
+      <!-- PII DETECTORS -->
+      <section id="detectors" class="section">
+        <h2>PII Detectors</h2>
+        <p class="section-desc">Toggle individual detector types. Disabled types are never scanned.</p>
+        <div class="detector-grid" id="detector-grid"></div>
+      </section>
+
+      <!-- PROFILES -->
+      <section id="profiles" class="section">
+        <h2>Profiles</h2>
+        <p class="section-desc">Quick presets stored across your devices. Applying a profile overwrites current detector settings.</p>
+        <div class="profile-grid">
+          <div class="profile-card">
+            <div class="profile-name">💼 Work</div>
+            <div class="profile-desc">All types on · Strict</div>
+            <button class="btn-sm" data-profile="work">Apply</button>
+          </div>
+          <div class="profile-card">
+            <div class="profile-name">🏠 Personal</div>
+            <div class="profile-desc">Email, Phone, SSN · Balanced</div>
+            <button class="btn-sm" data-profile="personal">Apply</button>
+          </div>
+          <div class="profile-card">
+            <div class="profile-name">🏥 Medical</div>
+            <div class="profile-desc">All types on · Strict + DOB focus</div>
+            <button class="btn-sm" data-profile="medical">Apply</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- CUSTOM RULES -->
+      <section id="custom" class="section">
+        <h2>Custom Rules</h2>
+        <p class="section-desc">Add your own regex patterns (e.g. employee IDs, project codes).</p>
+        <div id="custom-rules-list"></div>
+        <div class="add-rule-form">
+          <input type="text" id="rule-name"    placeholder="Type label (e.g. EMP_ID)"  class="input" />
+          <input type="text" id="rule-pattern" placeholder="Regex pattern (e.g. EMP-\d{6})" class="input" />
+          <select id="rule-confidence" class="input-sm">
+            <option value="high">High confidence</option>
+            <option value="medium">Medium confidence</option>
+          </select>
+          <button id="add-rule" class="btn">Add Rule</button>
+        </div>
+        <div id="rule-error" class="error-msg"></div>
+      </section>
+
+      <!-- DOMAIN ALLOWLIST -->
+      <section id="allowlist" class="section">
+        <h2>Domain Allowlist</h2>
+        <p class="section-desc">Skip Privacy Mesh on these domains (e.g. internal tools where PII is expected).</p>
+        <div id="allowlist-items"></div>
+        <div class="add-rule-form">
+          <input type="text" id="allowlist-domain" placeholder="e.g. internal.company.com" class="input" />
+          <button id="add-domain" class="btn">Add Domain</button>
+        </div>
+      </section>
+
+      <!-- AUDIT LOG -->
+      <section id="audit" class="section">
+        <h2>Audit Log</h2>
+        <p class="section-desc">Metadata only — prompt content is never stored, only a hash.</p>
+        <div class="audit-actions">
+          <button id="export-log" class="btn">Export JSON</button>
+          <button id="clear-log"  class="btn btn-danger">Clear Log</button>
+        </div>
+        <div id="audit-table-wrap">
+          <table class="audit-table">
+            <thead><tr>
+              <th>Time</th><th>Domain</th><th>Types</th><th>Count</th><th>ms</th>
+            </tr></thead>
+            <tbody id="audit-body"></tbody>
+          </table>
+          <div id="audit-empty" class="empty-msg" style="display:none">No entries yet.</div>
+        </div>
+      </section>
+
+      <div class="save-bar">
+        <button id="save" class="btn btn-primary">Save Settings</button>
+        <span id="save-status"></span>
       </div>
-    </section>
 
-    <section>
-      <h2>PII Detectors</h2>
-      <div id="detector-toggles" class="detector-grid">
-        <!-- Populated by settings.js -->
-      </div>
-    </section>
-
-    <div class="actions">
-      <button id="save">Save Settings</button>
-      <span id="save-status"></span>
-    </div>
+    </main>
   </div>
   <script src="settings.js"></script>
 </body>
