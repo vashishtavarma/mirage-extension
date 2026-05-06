@@ -2,6 +2,8 @@ import { MSG } from '../shared/messages.js';
 import { clearTokenMap, getTokenMap, mergeTokenMap } from './token-store.js';
 import { detectPII } from '../engine/pii-detector.js';
 import { anonymize } from '../engine/anonymizer.js';
+import { syntheticReplace } from '../engine/synthetic-replacer.js';
+import { semanticScrub } from '../engine/semantic-scrubber.js';
 import { scanResponse } from '../engine/response-scanner.js';
 import { logScan, getLog, clearLog, exportLog } from './audit-log.js';
 
@@ -65,7 +67,17 @@ async function handleSanitizePrompt(payload, sender) {
   }
 
   const detections = await detectPII(prompt, settings);
-  const { sanitized, tokenMap } = anonymize(prompt, detections);
+
+  // Synthetic mode: replace PII with realistic fake values instead of tokens
+  const useSynthetic = settings.syntheticMode === true;
+  const { sanitized, tokenMap } = useSynthetic
+    ? syntheticReplace(prompt, detections)
+    : anonymize(prompt, detections);
+
+  // Semantic scrubbing: detect indirect identifiers (always runs, results are advisory)
+  const semanticHits = settings.semanticScrubbing !== false
+    ? semanticScrub(prompt)
+    : [];
 
   if (Object.keys(tokenMap).length && tabId) {
     await mergeTokenMap(tabId, tokenMap);
@@ -85,7 +97,9 @@ async function handleSanitizePrompt(payload, sender) {
     tokenMap,
     piiCount: detections.length,
     detections,
+    semanticHits,
     elapsedMs: elapsed,
+    timingJitter: settings.timingJitter === true,
   };
 }
 

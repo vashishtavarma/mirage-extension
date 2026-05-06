@@ -46,4 +46,10 @@ export const platform = {
     const btn = this.getSubmitButton();
     return !!btn && (event.target === btn || btn.contains(event.target));
   },
+
+  getResponseContainer() {
+    // Most recent assistant message block
+    const blocks = document.querySelectorAll('[data-testid="assistant-message"], .font-claude-message, [class*="assistant"]');
+    return blocks.length ? blocks[blocks.length - 1] : null;
+  },
 };

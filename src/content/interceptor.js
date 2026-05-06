@@ -4,6 +4,9 @@ import { initBadge, showScanning, updateBadge } from './ui/badge.js';
 import { showHighRiskBanner, hasHighRisk } from './ui/banner.js';
 import { showDiffView } from './ui/diff-view.js';
 import { initSidebar, updateSidebar, openSidebar, toggleSidebar } from './ui/sidebar.js';
+import { initClipboardGuard } from './clipboard-guard.js';
+import { initResponseWatcher } from './response-watcher.js';
+import { applyTimingJitter } from '../engine/metadata-normalizer.js';
 
 const platform = detectPlatform();
 
@@ -16,10 +19,12 @@ if (!platform) {
 
 function init() {
   initSidebar();
+  initResponseWatcher(platform);
   waitForTextarea()
     .then((textarea) => {
       console.log('[PrivacyMesh] Textarea found:', textarea.tagName, textarea.className.slice(0, 60));
       initBadge(textarea);
+      initClipboardGuard(textarea);
       attachKeyboardInterceptor(textarea);
       attachClickInterceptor();
     })
@@ -102,20 +107,17 @@ async function interceptAndProcess(originalPrompt, textarea) {
     return true; // fail-open: send original
   }
 
-  const { sanitizedPrompt, piiCount, detections, tokenMap, elapsedMs } = result;
+  const { sanitizedPrompt, piiCount, detections, tokenMap, elapsedMs, semanticHits = [] } = result;
 
   // Update badge
   updateBadge(piiCount, detections);
 
   // Update sidebar with latest result
   const stats = await sendToBackground(MSG.GET_SESSION_STATS).catch(() => ({}));
-  updateSidebar({ detections, tokenMap, stats: stats.stats || {}, elapsedMs });
+  updateSidebar({ detections, tokenMap, stats: stats.stats || {}, elapsedMs, semanticHits });
 
-  // Show diff view if anything was redacted (click badge area to view — opened after banner)
-  if (piiCount > 0) {
-    // Auto-open sidebar so user sees what was found
-    openSidebar();
-  }
+  // Auto-open sidebar when PII or indirect identifiers found
+  if (piiCount > 0 || semanticHits.length > 0) openSidebar();
 
   // High-risk banner — pauses submit until user decides
   if (hasHighRisk(detections)) {
@@ -136,6 +138,9 @@ async function interceptAndProcess(originalPrompt, textarea) {
     // Store for later (diff button in sidebar could trigger this)
     window.__pmLastDiff = { original: originalPrompt, sanitized: sanitizedPrompt, detections };
   }
+
+  // Apply timing jitter if enabled (checked via SW settings response)
+  if (result.timingJitter) await applyTimingJitter();
 
   console.log(`[PrivacyMesh] Done. PII redacted: ${piiCount} (${elapsedMs}ms). Submitting.`);
   return true;

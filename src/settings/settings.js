@@ -60,8 +60,12 @@ async function init() {
 // ── Render ─────────────────────────────────────────────────────────────────────
 
 function renderGeneral() {
-  document.getElementById('enabled').checked = settings.enabled !== false;
-  document.getElementById('retention').value = settings.auditRetentionDays ?? 30;
+  document.getElementById('enabled').checked           = settings.enabled !== false;
+  document.getElementById('retention').value           = settings.auditRetentionDays ?? 30;
+  document.getElementById('clipboard-guard').checked   = settings.clipboardGuard !== false;
+  document.getElementById('semantic-scrubbing').checked= settings.semanticScrubbing !== false;
+  document.getElementById('synthetic-mode').checked    = settings.syntheticMode === true;
+  document.getElementById('timing-jitter').checked     = settings.timingJitter === true;
   const radio = document.querySelector(`input[name="sensitivity"][value="${settings.sensitivity || 'balanced'}"]`);
   if (radio) radio.checked = true;
 }
@@ -241,9 +245,13 @@ function bindSaveButton() {
   // Save
   document.getElementById('save').addEventListener('click', async () => {
     // Read current UI state into settings object
-    settings.enabled   = document.getElementById('enabled').checked;
-    settings.sensitivity = document.querySelector('input[name="sensitivity"]:checked')?.value || 'balanced';
+    settings.enabled            = document.getElementById('enabled').checked;
+    settings.sensitivity        = document.querySelector('input[name="sensitivity"]:checked')?.value || 'balanced';
     settings.auditRetentionDays = Number(document.getElementById('retention').value) || 30;
+    settings.clipboardGuard     = document.getElementById('clipboard-guard').checked;
+    settings.semanticScrubbing  = document.getElementById('semantic-scrubbing').checked;
+    settings.syntheticMode      = document.getElementById('synthetic-mode').checked;
+    settings.timingJitter       = document.getElementById('timing-jitter').checked;
 
     settings.detectors = {};
     document.querySelectorAll('[data-detector]').forEach((el) => {

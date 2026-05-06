@@ -34,4 +34,9 @@ export const platform = {
     const btn = this.getSubmitButton();
     return btn && (event.target === btn || btn.contains(event.target));
   },
+
+  getResponseContainer() {
+    const blocks = document.querySelectorAll('model-response, [class*="model-response"]');
+    return blocks.length ? blocks[blocks.length - 1] : null;
+  },
 };

@@ -88,7 +88,7 @@ export function initSidebar() {
   });
 }
 
-export function updateSidebar({ detections = [], tokenMap = {}, stats = {}, elapsedMs = 0 }) {
+export function updateSidebar({ detections = [], tokenMap = {}, stats = {}, elapsedMs = 0, responseWarnings = [], semanticHits = [] }) {
   if (!sidebarHost) return;
   const shadow = sidebarHost.shadowRoot;
 
@@ -101,15 +101,22 @@ export function updateSidebar({ detections = [], tokenMap = {}, stats = {}, elap
 
   // Detections
   const detList = shadow.getElementById('detections-list');
-  if (detections.length === 0) {
+  if (detections.length === 0 && semanticHits.length === 0) {
     detList.innerHTML = '<span class="empty">None found</span>';
   } else {
-    detList.innerHTML = detections.map((d) => `
+    const piiRows = detections.map((d) => `
       <div class="detection-row">
         <span class="det-type">${d.type}</span>
         <span class="det-val">${escHtml(d.value.slice(0, 40))}${d.value.length > 40 ? '…' : ''}</span>
       </div>
     `).join('');
+    const semRows = semanticHits.map((h) => `
+      <div class="detection-row">
+        <span class="det-type" style="background:rgba(245,158,11,.2);color:#fcd34d;">${h.type}</span>
+        <span class="det-val" title="${escHtml(h.reason)}">${escHtml(h.match)} ⚠️</span>
+      </div>
+    `).join('');
+    detList.innerHTML = piiRows + semRows;
   }
 
   // Token map

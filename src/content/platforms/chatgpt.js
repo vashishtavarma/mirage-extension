@@ -42,4 +42,9 @@ export const platform = {
     const btn = this.getSubmitButton();
     return btn && (event.target === btn || btn.contains(event.target));
   },
+
+  getResponseContainer() {
+    const blocks = document.querySelectorAll('[data-message-author-role="assistant"]');
+    return blocks.length ? blocks[blocks.length - 1] : null;
+  },
 };
