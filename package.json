@@ -11,18 +11,30 @@
     "lint:fix": "eslint src --ext .js --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "validate:manifest": "web-ext lint --source-dir . --ignore-files \"dist/**\" \"node_modules/**\" \"artifacts/**\" \"tests/**\" \"docs/**\"",
+    "pack:chrome": "npm run build && node scripts/pack-chrome.js",
+    "pack:ff": "npm run build && web-ext build --source-dir . --artifacts-dir artifacts/firefox --overrides-file manifest.firefox.json --ignore-files \"dist/**\" \"node_modules/**\" \"artifacts/**\" \"tests/**\" \"docs/**\" \"scripts/**\" \".github/**\""
   },
   "jest": {
     "testEnvironment": "node",
-    "transform": { "^.+\\.js$": "babel-jest" },
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    },
     "moduleNameMapper": {
       "^wink-nlp$": "<rootDir>/tests/__mocks__/wink-nlp.js",
       "^wink-eng-lite-web-model$": "<rootDir>/tests/__mocks__/wink-eng-lite-web-model.js"
     },
-    "setupFiles": ["./tests/setup.js"],
-    "testMatch": ["**/tests/unit/**/*.test.js"],
-    "collectCoverageFrom": ["src/engine/**/*.js", "src/background/audit-log.js"]
+    "setupFiles": [
+      "./tests/setup.js"
+    ],
+    "testMatch": [
+      "**/tests/unit/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "src/engine/**/*.js",
+      "src/background/audit-log.js"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -36,6 +48,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.8.3",
     "style-loader": "^4.0.0",
+    "web-ext": "^10.1.0",
     "webpack": "^5.106.2",
     "webpack-cli": "^7.0.2"
   },

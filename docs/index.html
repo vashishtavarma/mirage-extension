@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Mesh — PII redaction for AI chat</title>
+  <meta name="description" content="Real-time PII redaction between you and AI chat providers. Everything runs locally. Zero telemetry." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --border: #334155;
+      --text: #e2e8f0; --muted: #94a3b8; --green: #22c55e;
+      --blue: #3b82f6; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font: 16px/1.6 var(--font); }
+    a { color: var(--blue); }
+
+    /* Nav */
+    nav { display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px; border-bottom: 1px solid var(--border); }
+    .nav-logo { font-size: 18px; font-weight: 800; color: #f8fafc; }
+    .nav-links { display: flex; gap: 28px; list-style: none; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* Hero */
+    .hero { text-align: center; padding: 96px 24px 72px; max-width: 680px; margin: 0 auto; }
+    .hero-badge { display: inline-block; background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.3); color: var(--green);
+      border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; margin-bottom: 24px; }
+    h1 { font-size: 52px; font-weight: 800; line-height: 1.1; color: #f8fafc; margin-bottom: 20px; }
+    h1 span { color: var(--green); }
+    .hero-sub { font-size: 18px; color: var(--muted); margin-bottom: 40px; max-width: 480px; margin-inline: auto; }
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { background: var(--green); color: #fff; border: none; border-radius: 8px;
+      padding: 14px 28px; font-size: 15px; font-weight: 700; cursor: pointer; text-decoration: none;
+      transition: opacity .15s; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 14px 28px; font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: border-color .15s; }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+    .hero-note { font-size: 13px; color: var(--muted); margin-top: 20px; }
+
+    /* Demo strip */
+    .demo { background: var(--surface); border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); padding: 48px 24px; text-align: center; }
+    .demo-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 20px; }
+    .demo-flow { display: flex; align-items: center; justify-content: center;
+      gap: 12px; flex-wrap: wrap; font-size: 14px; }
+    .demo-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 16px; font-family: monospace; font-size: 13px; }
+    .demo-box.redacted { border-color: var(--green); color: var(--green); }
+    .arrow { color: var(--muted); font-size: 20px; }
+    .chip { display: inline-block; background: rgba(239,68,68,.15); color: #fca5a5;
+      border-radius: 4px; padding: 1px 6px; font-size: 11px; font-weight: 700; margin: 2px; }
+
+    /* Features */
+    .features { padding: 80px 24px; max-width: 1000px; margin: 0 auto; }
+    .section-title { text-align: center; font-size: 32px; font-weight: 800; color: #f8fafc;
+      margin-bottom: 8px; }
+    .section-sub { text-align: center; color: var(--muted); font-size: 16px; margin-bottom: 56px; }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .feature-card { background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; }
+    .feature-icon { font-size: 28px; margin-bottom: 12px; }
+    .feature-title { font-size: 16px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+    .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* FAQ */
+    .faq { padding: 80px 24px; max-width: 680px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
+    .faq-q { font-size: 15px; font-weight: 700; color: #f8fafc; margin-bottom: 8px; }
+    .faq-a { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .faq-a strong { color: var(--green); }
+
+    /* Footer */
+    footer { text-align: center; padding: 40px 24px; border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 13px; }
+    footer a { color: var(--muted); margin: 0 12px; text-decoration: none; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-logo">🔒 Privacy Mesh</span>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="https://github.com/vashishtavarma/mirage-extension">GitHub</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">Open Source · MIT · Zero Telemetry</div>
+  <h1>Your prompts.<br /><span>Sanitized</span> before they send.</h1>
+  <p class="hero-sub">Privacy Mesh intercepts every prompt before it reaches Claude, ChatGPT, or Gemini — stripping PII locally, in real time, with zero backend.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/vashishtavarma/mirage-extension#install-developer-mode" class="btn-primary">Install (Developer Mode)</a>
+    <a href="https://github.com/vashishtavarma/mirage-extension" class="btn-outline">View on GitHub</a>
+  </div>
+  <p class="hero-note">Chrome · Edge · Firefox · Free forever</p>
+</section>
+
+<section class="demo">
+  <div class="demo-label">What happens to your prompt</div>
+  <div class="demo-flow">
+    <div class="demo-box">Hi, my SSN is 123-45-6789 and email is me@work.com</div>
+    <span class="arrow">→</span>
+    <div style="text-align:left">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Detected:</div>
+      <span class="chip">SSN</span><span class="chip">EMAIL</span>
+    </div>
+    <span class="arrow">→</span>
+    <div class="demo-box redacted">Hi, my SSN is [SSN_01] and email is [EMAIL_01]</div>
+    <span class="arrow">→</span>
+    <div style="font-size:13px;color:var(--muted);">AI receives this ✓</div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <h2 class="section-title">Everything you need, nothing you don't</h2>
+  <p class="section-sub">Built for developers, healthcare workers, business users, and anyone who types sensitive information into AI tools.</p>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-title">12 PII Types</div>
+      <div class="feature-desc">Email, phone, SSN, credit card, IP address, date of birth, IBAN, passport, API keys, and NER-based person/org/location detection.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏠</div>
+      <div class="feature-title">100% Local</div>
+      <div class="feature-desc">No backend. No API. No cloud. Every byte of processing happens in your browser. The extension makes zero external network calls of its own.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🪟</div>
+      <div class="feature-title">Shadow DOM UI</div>
+      <div class="feature-desc">Badge, sidebar, diff view, and high-risk banner — all in Shadow DOM so they never conflict with the AI site's own styles.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-title">Clipboard Guard</div>
+      <div class="feature-desc">Intercepts paste events. If you paste content containing PII, you'll see a warning with the option to paste redacted or original.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚙️</div>
+      <div class="feature-title">Full Settings</div>
+      <div class="feature-desc">Per-type toggles, sensitivity presets, Work/Personal/Medical profiles, custom regex rules, and domain allowlisting for internal tools.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Audit Log</div>
+      <div class="feature-desc">Local-only log of every scan: domain, PII types caught, count, and a prompt hash — never the raw content. Export to JSON anytime.</div>
+    </div>
+  </div>
+</section>
+
+<section class="faq" id="faq">
+  <h2 class="section-title" style="margin-bottom:40px;">FAQ</h2>
+  <div class="faq-item">
+    <div class="faq-q">Does Privacy Mesh send my data anywhere?</div>
+    <div class="faq-a"><strong>No.</strong> The extension makes zero external network calls. All processing happens locally in your browser. Your prompts are sanitized on-device before reaching the AI provider.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Does the AI still understand my prompt after redaction?</div>
+    <div class="faq-a">Yes, for most use cases. Token placeholders like <code>[EMAIL_01]</code> preserve meaning. If you need better AI coherence, enable Synthetic Replacement Mode — this sends realistic fake values instead of tokens.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What happens to the token map?</div>
+    <div class="faq-a">Token maps are stored in <code>chrome.storage.session</code> — scoped to a single browser tab, never synced across devices, and automatically wiped when the tab closes.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Can I trust this extension?</div>
+    <div class="faq-a">It's fully open source under MIT. <a href="https://github.com/vashishtavarma/mirage-extension">Read every line of code on GitHub.</a> A privacy tool's credibility is proportional to its auditability.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Which browsers are supported?</div>
+    <div class="faq-a">Chrome and Edge (MV3). Firefox support is included via a MV2 manifest override. Install from source until store listings are live.</div>
+  </div>
+</section>
+
+<footer>
+  <a href="https://github.com/vashishtavarma/mirage-extension">GitHub</a>
+  <a href="privacy-policy.html">Privacy Policy</a>
+  <a href="https://github.com/vashishtavarma/mirage-extension/issues">Report an Issue</a>
+  <br /><br />
+  MIT License · Built with zero telemetry
+</footer>
+
+</body>
+</html>
