@@ -1,3 +1,5 @@
+import { injectFont, FONT } from './font.js';
+
 const HIGH_RISK = new Set(['SSN', 'PASSPORT', 'IBAN', 'CREDIT_CARD']);
 
 export function hasHighRisk(detections) {
@@ -9,10 +11,11 @@ export function showHighRiskBanner(detections) {
     const host = document.createElement('div');
     host.id = 'pm-banner-host';
     const shadow = host.attachShadow({ mode: 'open' });
+    injectFont(shadow);
 
     const types = [...new Set(detections.filter((d) => HIGH_RISK.has(d.type)).map((d) => d.type))];
 
-    shadow.innerHTML = `
+    shadow.innerHTML += `
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .overlay {
@@ -21,7 +24,7 @@ export function showHighRiskBanner(detections) {
           z-index: 2147483646;
           display: flex; align-items: flex-end;
           padding: 24px;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family: ${FONT};
         }
         .card {
           background: #FFFFFF;

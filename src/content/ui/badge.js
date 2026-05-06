@@ -1,10 +1,4 @@
-// ------------------------------------------------------------------
-// Color tokens (white/gray palette)
-// ------------------------------------------------------------------
-// #FFFFFF white   #BFBFBF light-gray  #7F7F7F mid-gray
-// #404040 dark-gray  #000000 black
-// Accent: #16a34a green  #d97706 amber  #dc2626 red
-// ------------------------------------------------------------------
+import { injectFont, FONT } from './font.js';
 
 let badgeHost = null;
 let badgeEl = null;
@@ -16,13 +10,14 @@ export function initBadge(textarea) {
   badgeHost.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;top:0;left:0;';
 
   const shadow = badgeHost.attachShadow({ mode: 'open' });
-  shadow.innerHTML = `
+  injectFont(shadow);
+  shadow.innerHTML += `
     <style>
       .badge {
         display: none;
         padding: 4px 12px;
         border-radius: 20px;
-        font: 600 11px/20px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font: 600 11px/20px ${FONT};
         white-space: nowrap;
         box-shadow: 0 1px 6px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.06);
         letter-spacing: .01em;

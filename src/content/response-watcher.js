@@ -1,5 +1,6 @@
 import { sendToBackground, MSG } from '../shared/messages.js';
 import { updateSidebar } from './ui/sidebar.js';
+import { injectFont, FONT } from './ui/font.js';
 
 let lastScanned = '';
 let debounceTimer = null;
@@ -38,7 +39,8 @@ function showResponseWarningBadge(count) {
 
   warnBadgeHost = document.createElement('div');
   const shadow = warnBadgeHost.attachShadow({ mode: 'open' });
-  shadow.innerHTML = `
+  injectFont(shadow);
+  shadow.innerHTML += `
     <style>
       .badge {
         position: fixed; top: 16px; right: 16px; z-index: 2147483645;
@@ -46,7 +48,7 @@ function showResponseWarningBadge(count) {
         border: 1.5px solid #BFBFBF;
         border-left: 3px solid #dc2626;
         border-radius: 8px; padding: 10px 14px;
-        font: 600 12px/1.4 -apple-system, sans-serif;
+        font: 600 12px/1.4 ${FONT};
         color: #404040;
         box-shadow: 0 4px 16px rgba(0,0,0,.1);
         display: flex; align-items: center; gap: 10px;

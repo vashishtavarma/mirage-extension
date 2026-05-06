@@ -1,4 +1,5 @@
 import { sendToBackground, MSG } from '../shared/messages.js';
+import { injectFont, FONT } from './ui/font.js';
 
 let guardHost = null;
 
@@ -30,9 +31,10 @@ function showClipboardWarning(textarea, originalText, scanResult) {
   guardHost = document.createElement('div');
   guardHost.id = 'pm-clipboard-host';
   const shadow = guardHost.attachShadow({ mode: 'open' });
+  injectFont(shadow);
   const types = [...new Set(scanResult.detections.map((d) => d.type))];
 
-  shadow.innerHTML = `
+  shadow.innerHTML += `
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .toast {
@@ -44,7 +46,7 @@ function showClipboardWarning(textarea, originalText, scanResult) {
         min-width: 340px; max-width: 520px;
         box-shadow: 0 8px 32px rgba(0,0,0,.12);
         z-index: 2147483646;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: ${FONT};
         color: #404040;
         animation: slide-up .2s ease;
       }

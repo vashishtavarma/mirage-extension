@@ -1,3 +1,5 @@
+import { injectFont, FONT } from './font.js';
+
 let sidebarHost = null;
 let isOpen = false;
 
@@ -7,14 +9,15 @@ export function initSidebar() {
   sidebarHost.style.cssText = 'position:fixed;top:0;right:0;z-index:2147483644;';
 
   const shadow = sidebarHost.attachShadow({ mode: 'open' });
-  shadow.innerHTML = `
+  injectFont(shadow);
+  shadow.innerHTML += `
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .panel {
         position: fixed; top: 0; right: -320px; width: 300px; height: 100vh;
         background: #FFFFFF;
         border-left: 1.5px solid #BFBFBF;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: ${FONT};
         color: #404040; overflow-y: auto;
         transition: right .25s cubic-bezier(.4,0,.2,1);
         display: flex; flex-direction: column;

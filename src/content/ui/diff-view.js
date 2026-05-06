@@ -1,3 +1,5 @@
+import { injectFont, FONT } from './font.js';
+
 let diffHost = null;
 
 export function showDiffView(original, sanitized, detections) {
@@ -6,8 +8,9 @@ export function showDiffView(original, sanitized, detections) {
   diffHost = document.createElement('div');
   diffHost.id = 'pm-diff-host';
   const shadow = diffHost.attachShadow({ mode: 'open' });
+  injectFont(shadow);
 
-  shadow.innerHTML = `
+  shadow.innerHTML += `
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .overlay {
@@ -16,7 +19,7 @@ export function showDiffView(original, sanitized, detections) {
         z-index: 2147483645;
         display: flex; align-items: center; justify-content: center;
         padding: 24px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: ${FONT};
       }
       .modal {
         background: #FFFFFF;
