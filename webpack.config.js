@@ -7,8 +7,10 @@ const isProd = process.env.NODE_ENV === 'production';
 const plugins = [
   new CopyPlugin({
     patterns: [
-      { from: 'src/popup/popup.html',     to: 'popup.html' },
+      { from: 'src/popup/popup.html',       to: 'popup.html' },
+      { from: 'src/popup/popup.css',        to: 'popup.css' },
       { from: 'src/settings/settings.html', to: 'settings.html' },
+      { from: 'src/settings/settings.css',  to: 'settings.css' },
       { from: 'icons', to: 'icons', noErrorOnMissing: true },
     ],
   }),
