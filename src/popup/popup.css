@@ -45,6 +45,16 @@ input:checked + .slider::before { transform: translateX(16px); }
 .stat-value { display: block; font-size: 22px; font-weight: 700; color: #22c55e; }
 .stat-label { font-size: 10px; color: #94a3b8; margin-top: 2px; display: block; }
 
+/* Action buttons */
+.actions { display: flex; gap: 8px; margin-bottom: 14px; }
+.actions button {
+  flex: 1; padding: 7px 0; border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+  background: #2563eb; color: #fff;
+}
+.actions button.secondary { background: #1e293b; color: #94a3b8; }
+.actions button:hover { opacity: .85; }
+
 /* Footer */
 footer {
   display: flex; justify-content: space-between; align-items: center;

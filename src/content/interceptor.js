@@ -1,6 +1,9 @@
 import { detectPlatform } from './platforms/index.js';
 import { sendToBackground, MSG } from '../shared/messages.js';
-import { initBadge, updateBadge } from './ui/badge.js';
+import { initBadge, showScanning, updateBadge } from './ui/badge.js';
+import { showHighRiskBanner, hasHighRisk } from './ui/banner.js';
+import { showDiffView } from './ui/diff-view.js';
+import { initSidebar, updateSidebar, openSidebar, toggleSidebar } from './ui/sidebar.js';
 
 const platform = detectPlatform();
 
@@ -12,15 +15,18 @@ if (!platform) {
 }
 
 function init() {
-  waitForTextarea().then((textarea) => {
-    console.log('[PrivacyMesh] Textarea found:', textarea.tagName, textarea.className.slice(0, 60));
-    initBadge(textarea);
-    attachKeyboardInterceptor(textarea);
-    attachClickInterceptor();
-  }).catch((err) => console.error(err.message));
+  initSidebar();
+  waitForTextarea()
+    .then((textarea) => {
+      console.log('[PrivacyMesh] Textarea found:', textarea.tagName, textarea.className.slice(0, 60));
+      initBadge(textarea);
+      attachKeyboardInterceptor(textarea);
+      attachClickInterceptor();
+    })
+    .catch((err) => console.error(err.message));
 }
 
-// --- Re-entry guard — prevents our resume callbacks from being re-intercepted ---
+// --- Re-entry guard ---
 let isProcessing = false;
 
 // --- Submit interception ---
@@ -39,15 +45,14 @@ function attachKeyboardInterceptor(textarea) {
       event.stopImmediatePropagation();
 
       isProcessing = true;
-      await interceptAndSubmit(prompt, textarea, () => {
-        // Dispatch a full keyboard Enter directly on the editor div.
-        // isProcessing stays true during dispatch so our own listener skips it;
-        // ProseMirror / the platform's own keydown handler sees it and submits.
+      const shouldSubmit = await interceptAndProcess(prompt, textarea);
+
+      if (shouldSubmit) {
         dispatchEnter(textarea);
-        isProcessing = false;
-      });
+      }
+      isProcessing = false;
     },
-    true // capture phase — fires before the platform's own handlers
+    true
   );
 }
 
@@ -68,61 +73,93 @@ function attachClickInterceptor() {
       event.stopImmediatePropagation();
 
       isProcessing = true;
-      await interceptAndSubmit(prompt, textarea, () => {
+      const shouldSubmit = await interceptAndProcess(prompt, textarea);
+
+      if (shouldSubmit) {
         const btn = platform.getSubmitButton();
-        if (btn) {
-          // Dispatch a real-looking MouseEvent — React's delegated listener picks it up.
-          btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-        }
-        isProcessing = false;
-      });
+        if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      }
+      isProcessing = false;
     },
-    true // capture phase
+    true
   );
 }
 
-// Dispatch a full Enter keydown that the host editor (ProseMirror, etc.) will
-// process as a real submit. Must be called while isProcessing = true so our
-// own capture listener ignores it.
+/**
+ * Core pipeline: sanitize → UI → decide.
+ * Returns true if the (possibly modified) prompt should be submitted.
+ */
+async function interceptAndProcess(originalPrompt, textarea) {
+  console.log(`[PrivacyMesh] Intercepted: "${originalPrompt.slice(0, 60)}${originalPrompt.length > 60 ? '…' : ''}"`);
+  showScanning();
+
+  let result;
+  try {
+    result = await sendToBackground(MSG.SANITIZE_PROMPT, { prompt: originalPrompt });
+  } catch (err) {
+    console.error('[PrivacyMesh] SW unreachable, sending original:', err.message);
+    updateBadge(0, []);
+    return true; // fail-open: send original
+  }
+
+  const { sanitizedPrompt, piiCount, detections, tokenMap, elapsedMs } = result;
+
+  // Update badge
+  updateBadge(piiCount, detections);
+
+  // Update sidebar with latest result
+  const stats = await sendToBackground(MSG.GET_SESSION_STATS).catch(() => ({}));
+  updateSidebar({ detections, tokenMap, stats: stats.stats || {}, elapsedMs });
+
+  // Show diff view if anything was redacted (click badge area to view — opened after banner)
+  if (piiCount > 0) {
+    // Auto-open sidebar so user sees what was found
+    openSidebar();
+  }
+
+  // High-risk banner — pauses submit until user decides
+  if (hasHighRisk(detections)) {
+    const proceed = await showHighRiskBanner(detections);
+
+    if (!proceed) {
+      // User chose to send original — restore original text and submit as-is
+      console.log('[PrivacyMesh] User override: sending original prompt');
+      return true;
+    }
+  }
+
+  // Apply sanitized text to the textarea
+  if (sanitizedPrompt !== originalPrompt) {
+    platform.setPromptText(textarea, sanitizedPrompt);
+
+    // Expose diff view — user can open sidebar to see token map
+    // Store for later (diff button in sidebar could trigger this)
+    window.__pmLastDiff = { original: originalPrompt, sanitized: sanitizedPrompt, detections };
+  }
+
+  console.log(`[PrivacyMesh] Done. PII redacted: ${piiCount} (${elapsedMs}ms). Submitting.`);
+  return true;
+}
+
+// --- Helpers ---
+
 function dispatchEnter(target) {
   target.dispatchEvent(
     new KeyboardEvent('keydown', {
-      key: 'Enter',
-      code: 'Enter',
-      keyCode: 13,
-      which: 13,
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      view: window,
+      key: 'Enter', code: 'Enter', keyCode: 13, which: 13,
+      bubbles: true, cancelable: true, composed: true, view: window,
     })
   );
 }
 
-async function interceptAndSubmit(prompt, textarea, resume) {
-  console.log(`[PrivacyMesh] Intercepted: "${prompt.slice(0, 60)}${prompt.length > 60 ? '…' : ''}"`);
-
-  let result;
-  try {
-    result = await sendToBackground(MSG.SANITIZE_PROMPT, { prompt });
-  } catch (err) {
-    console.error('[PrivacyMesh] Service worker unreachable, sending original:', err.message);
-    resume(); // resume keeps isProcessing=true through btn.click(), then resets
-    return;
+// Messages from popup
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'TOGGLE_SIDEBAR') toggleSidebar();
+  if (msg.type === 'SHOW_DIFF') {
+    const d = window.__pmLastDiff;
+    if (d) showDiffView(d.original, d.sanitized, d.detections);
   }
-
-  const { sanitizedPrompt, piiCount, detections } = result;
-  updateBadge(piiCount, detections);
-
-  if (sanitizedPrompt !== prompt) {
-    platform.setPromptText(textarea, sanitizedPrompt);
-  }
-
-  console.log(`[PrivacyMesh] Done. PII redacted: ${piiCount}. Resuming submit.`);
-  resume();
-}
-
-// --- Helpers ---
+});
 
 function waitForTextarea(timeout = 15000) {
   return new Promise((resolve, reject) => {
@@ -131,14 +168,10 @@ function waitForTextarea(timeout = 15000) {
 
     const observer = new MutationObserver(() => {
       const el = platform.getTextarea();
-      if (el) {
-        observer.disconnect();
-        resolve(el);
-      }
+      if (el) { observer.disconnect(); resolve(el); }
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-
     setTimeout(() => {
       observer.disconnect();
       reject(new Error('[PrivacyMesh] Textarea not found within timeout'));

@@ -5,8 +5,10 @@ async function init() {
   const promptsEl = document.getElementById('prompts-processed');
   const piiEl = document.getElementById('pii-caught');
   const settingsLink = document.getElementById('open-settings');
+  const sidebarBtn = document.getElementById('open-sidebar');
+  const diffBtn = document.getElementById('open-diff');
 
-  // Load persisted enabled state
+  // Load enabled state
   const settings = await sendToBackground(MSG.GET_SETTINGS).catch(() => ({ enabled: true }));
   toggle.checked = settings.enabled !== false;
 
@@ -24,6 +26,24 @@ async function init() {
   settingsLink.addEventListener('click', (e) => {
     e.preventDefault();
     chrome.runtime.openOptionsPage();
+  });
+
+  // Open sidebar in the active tab's content script
+  sidebarBtn.addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_SIDEBAR' });
+      window.close();
+    }
+  });
+
+  // Show last diff
+  diffBtn.addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'SHOW_DIFF' });
+      window.close();
+    }
   });
 }
 
