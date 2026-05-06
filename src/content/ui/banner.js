@@ -4,11 +4,6 @@ export function hasHighRisk(detections) {
   return detections.some((d) => HIGH_RISK.has(d.type));
 }
 
-/**
- * Show a blocking banner for high-risk PII.
- * Resolves true  → proceed with redacted prompt
- * Resolves false → send original (user override)
- */
 export function showHighRiskBanner(detections) {
   return new Promise((resolve) => {
     const host = document.createElement('div');
@@ -22,53 +17,53 @@ export function showHighRiskBanner(detections) {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         .overlay {
           position: fixed; inset: 0;
-          background: rgba(0,0,0,.55);
+          background: rgba(0,0,0,.35);
           z-index: 2147483646;
           display: flex; align-items: flex-end;
           padding: 24px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         .card {
-          background: #1e293b;
-          border: 1px solid rgba(239,68,68,.5);
-          border-radius: 14px;
+          background: #FFFFFF;
+          border: 1.5px solid #BFBFBF;
+          border-top: 3px solid #d97706;
+          border-radius: 12px;
           padding: 20px 24px;
-          width: 100%; max-width: 560px;
+          width: 100%; max-width: 540px;
           margin: 0 auto;
-          color: #e2e8f0;
-          box-shadow: 0 8px 32px rgba(0,0,0,.4);
+          box-shadow: 0 8px 32px rgba(0,0,0,.12);
         }
         .title {
-          font-size: 14px; font-weight: 700;
-          color: #fbbf24; margin-bottom: 6px;
+          font-size: 13px; font-weight: 700;
+          color: #000000; margin-bottom: 6px;
           display: flex; align-items: center; gap: 8px;
         }
-        .body { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
-        .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+        .body { font-size: 12px; color: #7F7F7F; margin-bottom: 14px; }
+        .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
         .chip {
-          background: rgba(239,68,68,.15);
-          border: 1px solid rgba(239,68,68,.35);
-          color: #fca5a5;
-          border-radius: 4px; padding: 2px 8px;
+          background: #f5f5f5;
+          border: 1px solid #BFBFBF;
+          color: #404040;
+          border-radius: 4px; padding: 2px 9px;
           font-size: 11px; font-weight: 700; letter-spacing: .04em;
         }
         .actions { display: flex; gap: 10px; justify-content: flex-end; }
         button {
-          border: none; border-radius: 7px;
-          padding: 8px 18px; font-size: 13px; font-weight: 600;
-          cursor: pointer; transition: opacity .15s;
+          border-radius: 7px; padding: 8px 18px;
+          font-size: 12px; font-weight: 600; cursor: pointer;
+          transition: opacity .15s; border: 1.5px solid;
         }
         button:hover { opacity: .85; }
-        .confirm  { background: #22c55e; color: #fff; }
-        .original { background: #334155; color: #e2e8f0; }
+        .confirm  { background: #000000; border-color: #000000; color: #FFFFFF; }
+        .original { background: #FFFFFF; border-color: #BFBFBF; color: #404040; }
       </style>
       <div class="overlay">
         <div class="card">
           <div class="title">⚠️ High-risk data detected</div>
-          <div class="body">Privacy Mesh found sensitive identifiers and has redacted them. Choose how to proceed.</div>
+          <div class="body">Privacy Mesh found sensitive identifiers. Sending the redacted version is strongly recommended.</div>
           <div class="chips">${types.map((t) => `<span class="chip">${t}</span>`).join('')}</div>
           <div class="actions">
-            <button class="original" id="orig">Send Original (not recommended)</button>
+            <button class="original" id="orig">Send Original</button>
             <button class="confirm"  id="conf">Send Redacted ✓</button>
           </div>
         </div>
@@ -76,7 +71,6 @@ export function showHighRiskBanner(detections) {
     `;
 
     document.body.appendChild(host);
-
     shadow.getElementById('conf').addEventListener('click', () => { host.remove(); resolve(true); });
     shadow.getElementById('orig').addEventListener('click', () => { host.remove(); resolve(false); });
   });

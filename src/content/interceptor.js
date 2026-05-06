@@ -7,6 +7,7 @@ import { initSidebar, updateSidebar, openSidebar, toggleSidebar } from './ui/sid
 import { initClipboardGuard } from './clipboard-guard.js';
 import { initResponseWatcher } from './response-watcher.js';
 import { applyTimingJitter } from '../engine/metadata-normalizer.js';
+import { runNER } from './ner-runner.js';
 
 const platform = detectPlatform();
 
@@ -98,9 +99,13 @@ async function interceptAndProcess(originalPrompt, textarea) {
   console.log(`[PrivacyMesh] Intercepted: "${originalPrompt.slice(0, 60)}${originalPrompt.length > 60 ? '…' : ''}"`);
   showScanning();
 
+  // Run NER in content script (has DOM access) and include results with the SW request
+  const settings = await sendToBackground(MSG.GET_SETTINGS).catch(() => ({}));
+  const nerDetections = await runNER(originalPrompt, settings);
+
   let result;
   try {
-    result = await sendToBackground(MSG.SANITIZE_PROMPT, { prompt: originalPrompt });
+    result = await sendToBackground(MSG.SANITIZE_PROMPT, { prompt: originalPrompt, nerDetections });
   } catch (err) {
     console.error('[PrivacyMesh] SW unreachable, sending original:', err.message);
     updateBadge(0, []);

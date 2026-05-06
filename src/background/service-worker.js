@@ -66,7 +66,13 @@ async function handleSanitizePrompt(payload, sender) {
     return { type: MSG.SANITIZE_RESULT, sanitizedPrompt: prompt, tokenMap: {}, piiCount: 0, detections: [] };
   }
 
-  const detections = await detectPII(prompt, settings);
+  // detectPII handles the regex layer; NER comes from the content script (has DOM)
+  const regexDetections = await detectPII(prompt, settings);
+  const nerDetections   = Array.isArray(payload.nerDetections) ? payload.nerDetections : [];
+  // Merge, dedup by type:value
+  const seen = new Set(regexDetections.map((d) => `${d.type}:${d.value}`));
+  const merged = nerDetections.filter((d) => !seen.has(`${d.type}:${d.value}`));
+  const detections = [...regexDetections, ...merged].sort((a, b) => a.start - b.start);
 
   // Synthetic mode: replace PII with realistic fake values instead of tokens
   const useSynthetic = settings.syntheticMode === true;

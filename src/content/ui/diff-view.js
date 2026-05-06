@@ -1,9 +1,5 @@
 let diffHost = null;
 
-/**
- * Show a modal with the original prompt alongside the sanitized version,
- * with detected PII highlighted in each.
- */
 export function showDiffView(original, sanitized, detections) {
   closeDiffView();
 
@@ -16,52 +12,64 @@ export function showDiffView(original, sanitized, detections) {
       * { box-sizing: border-box; margin: 0; padding: 0; }
       .overlay {
         position: fixed; inset: 0;
-        background: rgba(0,0,0,.6);
+        background: rgba(0,0,0,.3);
         z-index: 2147483645;
         display: flex; align-items: center; justify-content: center;
         padding: 24px;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       }
       .modal {
-        background: #0f172a; border: 1px solid #334155;
-        border-radius: 14px; width: 100%; max-width: 720px;
-        max-height: 80vh; display: flex; flex-direction: column;
-        box-shadow: 0 16px 48px rgba(0,0,0,.5);
+        background: #FFFFFF;
+        border: 1.5px solid #BFBFBF;
+        border-radius: 12px;
+        width: 100%; max-width: 720px; max-height: 80vh;
+        display: flex; flex-direction: column;
+        box-shadow: 0 16px 48px rgba(0,0,0,.14);
       }
       .header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 16px 20px; border-bottom: 1px solid #1e293b;
+        padding: 14px 20px; border-bottom: 1px solid #BFBFBF;
       }
-      .header-title { font-size: 13px; font-weight: 700; color: #f8fafc; }
+      .header-title { font-size: 13px; font-weight: 700; color: #000000; }
       .close {
-        background: none; border: none; color: #64748b;
-        font-size: 18px; cursor: pointer; line-height: 1; padding: 2px 6px;
+        background: none; border: none; color: #7F7F7F;
+        font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px;
       }
-      .close:hover { color: #e2e8f0; }
+      .close:hover { background: #f5f5f5; color: #000000; }
       .cols {
         display: grid; grid-template-columns: 1fr 1fr;
-        gap: 0; overflow: auto; flex: 1;
+        overflow: auto; flex: 1;
       }
       .col { padding: 16px 20px; }
-      .col + .col { border-left: 1px solid #1e293b; }
+      .col + .col { border-left: 1px solid #BFBFBF; background: #fafafa; }
       .col-label {
         font-size: 10px; font-weight: 700; letter-spacing: .08em;
-        text-transform: uppercase; color: #475569; margin-bottom: 10px;
+        text-transform: uppercase; color: #7F7F7F; margin-bottom: 10px;
       }
       .text {
-        font-size: 13px; line-height: 1.7; color: #cbd5e1;
+        font-size: 13px; line-height: 1.7; color: #404040;
         white-space: pre-wrap; word-break: break-word;
       }
-      .pii-orig { background: rgba(239,68,68,.25); color: #fca5a5; border-radius: 3px; padding: 0 2px; }
-      .pii-token { background: rgba(34,197,94,.2); color: #86efac; border-radius: 3px; padding: 0 2px;
-                   font-weight: 600; font-family: monospace; font-size: 11px; }
-      .footer { padding: 12px 20px; border-top: 1px solid #1e293b; text-align: right; }
-      .footer-note { font-size: 11px; color: #475569; }
+      .pii-orig {
+        background: #fef3c7; color: #92400e;
+        border-radius: 3px; padding: 0 3px;
+        border-bottom: 1.5px solid #d97706;
+      }
+      .pii-token {
+        background: #dcfce7; color: #166534;
+        border-radius: 3px; padding: 0 3px;
+        font-weight: 700; font-family: monospace; font-size: 11px;
+        border-bottom: 1.5px solid #16a34a;
+      }
+      .footer {
+        padding: 10px 20px; border-top: 1px solid #BFBFBF;
+        font-size: 11px; color: #7F7F7F; text-align: right;
+      }
     </style>
     <div class="overlay" id="overlay">
       <div class="modal">
         <div class="header">
-          <span class="header-title">🔍 Prompt Diff — what Privacy Mesh changed</span>
+          <span class="header-title">Prompt diff — what Privacy Mesh changed</span>
           <button class="close" id="close">✕</button>
         </div>
         <div class="cols">
@@ -74,16 +82,13 @@ export function showDiffView(original, sanitized, detections) {
             <div class="text" id="san-text"></div>
           </div>
         </div>
-        <div class="footer">
-          <span class="footer-note">Token map is stored locally and cleared when you close this tab.</span>
-        </div>
+        <div class="footer">Token map is stored locally and cleared when this tab closes.</div>
       </div>
     </div>
   `;
 
   shadow.getElementById('orig-text').innerHTML = highlightOriginal(original, detections);
-  shadow.getElementById('san-text').innerHTML = highlightSanitized(sanitized, detections);
-
+  shadow.getElementById('san-text').innerHTML  = highlightSanitized(sanitized);
   shadow.getElementById('close').addEventListener('click', closeDiffView);
   shadow.getElementById('overlay').addEventListener('click', (e) => {
     if (e.target === shadow.getElementById('overlay')) closeDiffView();
@@ -96,11 +101,9 @@ export function closeDiffView() {
   if (diffHost) { diffHost.remove(); diffHost = null; }
 }
 
-// Wrap detected PII spans in the original text
 function highlightOriginal(text, detections) {
   if (!detections.length) return escHtml(text);
-  let out = '';
-  let cursor = 0;
+  let out = '', cursor = 0;
   for (const d of detections) {
     out += escHtml(text.slice(cursor, d.start));
     out += `<span class="pii-orig" title="${d.type}">${escHtml(d.value)}</span>`;
@@ -109,13 +112,10 @@ function highlightOriginal(text, detections) {
   return out + escHtml(text.slice(cursor));
 }
 
-// Wrap [TOKEN] placeholders in the sanitized text
-function highlightSanitized(text, detections) {
-  return escHtml(text).replace(/\[([A-Z_]+_\d+)\]/g, (_, token) => {
-    return `<span class="pii-token">[${token}]</span>`;
-  });
+function highlightSanitized(text) {
+  return escHtml(text).replace(/\[([A-Z_]+_\d+)\]/g, (_, t) => `<span class="pii-token">[${t}]</span>`);
 }
 
-function escHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }

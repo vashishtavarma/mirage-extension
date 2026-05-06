@@ -1,3 +1,11 @@
+// ------------------------------------------------------------------
+// Color tokens (white/gray palette)
+// ------------------------------------------------------------------
+// #FFFFFF white   #BFBFBF light-gray  #7F7F7F mid-gray
+// #404040 dark-gray  #000000 black
+// Accent: #16a34a green  #d97706 amber  #dc2626 red
+// ------------------------------------------------------------------
+
 let badgeHost = null;
 let badgeEl = null;
 let hideTimer = null;
@@ -12,19 +20,20 @@ export function initBadge(textarea) {
     <style>
       .badge {
         display: none;
-        padding: 4px 10px;
+        padding: 4px 12px;
         border-radius: 20px;
         font: 600 11px/20px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        color: #fff;
         white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,.3);
-        transition: background .15s;
+        box-shadow: 0 1px 6px rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.06);
         letter-spacing: .01em;
+        background: #FFFFFF;
+        border: 1.5px solid;
+        transition: border-color .15s, color .15s;
       }
-      .scanning { background: #6366f1; }
-      .clean    { background: #22c55e; }
-      .amber    { background: #f59e0b; }
-      .red      { background: #ef4444; }
+      .scanning { border-color: #7F7F7F; color: #7F7F7F; }
+      .clean    { border-color: #16a34a; color: #16a34a; }
+      .amber    { border-color: #d97706; color: #d97706; }
+      .red      { border-color: #dc2626; color: #dc2626; }
     </style>
     <div class="badge" id="b"></div>
   `;
@@ -35,8 +44,6 @@ export function initBadge(textarea) {
 
   window.addEventListener('resize', () => positionNear(textarea), { passive: true });
   window.addEventListener('scroll', () => positionNear(textarea), { passive: true });
-
-  // Hide badge on next keystroke (user is editing again)
   textarea.addEventListener('input', hide, { passive: true });
 }
 
@@ -44,7 +51,7 @@ export function showScanning() {
   show('Scanning…', 'scanning', 0);
 }
 
-export function updateBadge(piiCount, detections = []) {
+export function updateBadge(piiCount) {
   if (piiCount === 0) {
     show('✓ Clean', 'clean', 2000);
   } else {
@@ -69,5 +76,5 @@ function hide() {
 function positionNear(textarea) {
   if (!badgeHost || !textarea) return;
   const r = textarea.getBoundingClientRect();
-  badgeHost.style.transform = `translate(${r.right - 148}px, ${r.top - 30}px)`;
+  badgeHost.style.transform = `translate(${r.right - 148}px,${r.top - 32}px)`;
 }

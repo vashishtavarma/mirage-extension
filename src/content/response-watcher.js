@@ -3,25 +3,14 @@ import { updateSidebar } from './ui/sidebar.js';
 
 let lastScanned = '';
 let debounceTimer = null;
-let observer = null;
+let warnBadgeHost = null;
 
-/**
- * Watch for new AI response content and scan it for PII echo.
- * Uses a MutationObserver on the page body; debounces scans to avoid
- * scanning partial streamed responses.
- */
 export function initResponseWatcher(platform) {
-  observer = new MutationObserver(() => {
+  const observer = new MutationObserver(() => {
     clearTimeout(debounceTimer);
-    // Wait 1.5s after DOM settles — responses stream in chunks
     debounceTimer = setTimeout(() => scanLatestResponse(platform), 1500);
   });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-  });
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 }
 
 async function scanLatestResponse(platform) {
@@ -35,27 +24,14 @@ async function scanLatestResponse(platform) {
   let result;
   try {
     result = await sendToBackground(MSG.SCAN_RESPONSE, { responseText: text });
-  } catch {
-    return;
-  }
+  } catch { return; }
 
   if (!result?.echoDetected || !result.warnings?.length) return;
 
   console.warn('[PrivacyMesh] Response scan warnings:', result.warnings);
-
-  // Surface warnings in sidebar
-  updateSidebar({
-    detections: [],
-    tokenMap: {},
-    stats: {},
-    elapsedMs: 0,
-    responseWarnings: result.warnings,
-  });
-
+  updateSidebar({ detections: [], tokenMap: {}, stats: {}, elapsedMs: 0, responseWarnings: result.warnings });
   showResponseWarningBadge(result.warnings.length);
 }
-
-let warnBadgeHost = null;
 
 function showResponseWarningBadge(count) {
   if (warnBadgeHost) warnBadgeHost.remove();
@@ -66,16 +42,22 @@ function showResponseWarningBadge(count) {
     <style>
       .badge {
         position: fixed; top: 16px; right: 16px; z-index: 2147483645;
-        background: #ef4444; color: #fff;
-        border-radius: 8px; padding: 8px 14px;
+        background: #FFFFFF;
+        border: 1.5px solid #BFBFBF;
+        border-left: 3px solid #dc2626;
+        border-radius: 8px; padding: 10px 14px;
         font: 600 12px/1.4 -apple-system, sans-serif;
-        box-shadow: 0 4px 16px rgba(0,0,0,.3);
-        display: flex; align-items: center; gap: 8px;
+        color: #404040;
+        box-shadow: 0 4px 16px rgba(0,0,0,.1);
+        display: flex; align-items: center; gap: 10px;
         animation: fadein .2s ease;
       }
-      @keyframes fadein { from { opacity:0; transform:translateY(-8px); } }
-      button { background:none; border:none; color:#fff; cursor:pointer; font-size:14px; opacity:.7; }
-      button:hover { opacity:1; }
+      @keyframes fadein { from { opacity:0; transform:translateY(-6px); } }
+      button {
+        background: none; border: none; color: #7F7F7F;
+        cursor: pointer; font-size: 14px; padding: 0 2px;
+      }
+      button:hover { color: #000000; }
     </style>
     <div class="badge">
       ⚠️ AI response may contain PII (${count} warning${count !== 1 ? 's' : ''})
