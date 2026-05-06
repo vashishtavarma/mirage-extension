@@ -1,0 +1,106 @@
+{
+  "EMAIL": {
+    "positive": [
+      "user@example.com", "test.user@domain.co.uk", "name+tag@subdomain.org",
+      "firstname.lastname@company.com", "user123@test.net", "a@b.io",
+      "very.long.email.address@very.long.domain.name.com", "user@domain.travel",
+      "test_user@example-domain.com", "user%tag@example.com",
+      "contact@privacy-mesh.dev", "hello@world.app", "no-reply@service.ai",
+      "user@123domain.com", "CAPS@EXAMPLE.COM"
+    ],
+    "negative": [
+      "not-an-email", "@nodomain.com", "user@", "user@.com",
+      "plaintext", "user @example.com", "user@ example.com",
+      "@", "@@", "user@domain", "http://example.com"
+    ]
+  },
+  "PHONE": {
+    "positive": [
+      "+1-800-555-0100", "(555) 123-4567", "555.123.4567", "5551234567",
+      "+44 20 7946 0958", "+1 (800) 555-0199", "800-555-0100",
+      "(212) 555-1234", "+49 30 12345678", "1-888-555-0100",
+      "+1-555-123-4567", "(800)5550100", "555 123 4567"
+    ],
+    "negative": [
+      "12345", "555-12", "1234", "not-a-phone",
+      "version 1.2.3", "ISBN: 978-0-00-000000-0"
+    ]
+  },
+  "SSN": {
+    "positive": [
+      "123-45-6789", "987-65-4321", "000-12-3456",
+      "111-22-3333", "444-55-6666", "999-88-7777"
+    ],
+    "negative": [
+      "123456789", "123-456-789", "12-345-6789",
+      "123-45-67890", "SSN: 123456", "not-a-ssn"
+    ]
+  },
+  "CREDIT_CARD": {
+    "positive": [
+      "4111111111111111", "4111 1111 1111 1111", "4111-1111-1111-1111",
+      "5500 0000 0000 0004", "3714 496353 98431", "6011 1111 1111 1117",
+      "4012888888881881", "5105105105105100"
+    ],
+    "negative": [
+      "1234567890123456", "0000000000000000",
+      "1111-1111-1111-1111", "not-a-card"
+    ]
+  },
+  "IP_ADDRESS": {
+    "positive": [
+      "192.168.1.1", "10.0.0.1", "172.16.0.1", "255.255.255.0",
+      "0.0.0.0", "8.8.8.8", "1.2.3.4", "192.0.2.100",
+      "203.0.113.42", "198.51.100.1"
+    ],
+    "negative": [
+      "256.0.0.1", "192.168.1", "1.2.3.4.5",
+      "not.an.ip", "192.168.a.1"
+    ]
+  },
+  "SSN_IN_CONTEXT": {
+    "positive": [
+      "My SSN is 123-45-6789",
+      "Social security: 987-65-4321",
+      "SSN 111-22-3333 on file"
+    ]
+  },
+  "EMAIL_IN_CONTEXT": {
+    "positive": [
+      "Contact me at user@example.com for details",
+      "Send the report to john.doe@company.org",
+      "Email: hello@world.app"
+    ]
+  },
+  "API_KEY": {
+    "positive": [
+      "sk-TESTONLY_abcdefghijklmnopqrstuvwxyz",
+      "ghp_TESTONLY1234567890abcdefghijklmnop",
+      "gho_TESTONLY_xxxxyyyyzzzz1234567890abcd",
+      "SLACK_BOT_TESTONLY_1234567890-abcdefghijklmnop",
+      "github_pat_TESTONLY_abcdefghijklmnopqrstuvwx"
+    ],
+    "negative": [
+      "sk-", "ghp_", "regular-secret-key", "not_an_api_key"
+    ]
+  },
+  "DATE_OF_BIRTH": {
+    "positive": [
+      "DOB: 01/15/1990", "born on 03/22/1985",
+      "date of birth: January 15, 1990",
+      "birthday: 12/25/1995", "DOB 07-04-1976"
+    ],
+    "negative": [
+      "01/15/1990", "March 2020", "the date is important"
+    ]
+  },
+  "IBAN": {
+    "positive": [
+      "GB29NWBK60161331926819", "DE89370400440532013000",
+      "FR1420041010050500013M02606", "ES9121000418450200051332"
+    ],
+    "negative": [
+      "GB12", "notaniban", "12345678901234"
+    ]
+  }
+}

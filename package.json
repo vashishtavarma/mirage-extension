@@ -10,9 +10,24 @@
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": { "^.+\\.js$": "babel-jest" },
+    "moduleNameMapper": {
+      "^wink-nlp$": "<rootDir>/tests/__mocks__/wink-nlp.js",
+      "^wink-eng-lite-web-model$": "<rootDir>/tests/__mocks__/wink-eng-lite-web-model.js"
+    },
+    "setupFiles": ["./tests/setup.js"],
+    "testMatch": ["**/tests/unit/**/*.test.js"],
+    "collectCoverageFrom": ["src/engine/**/*.js", "src/background/audit-log.js"]
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.5",
+    "babel-jest": "^30.3.0",
     "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^7.0.3",
     "css-loader": "^7.1.4",

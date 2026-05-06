@@ -59,7 +59,7 @@ export const REGEX_RULES = [
   {
     type: 'API_KEY',
     // Generic high-entropy tokens: sk-, ghp_, Bearer tokens, etc.
-    pattern: /\b(?:sk-|ghp_|gho_|github_pat_|xox[baprs]-)[a-zA-Z0-9_\-]{10,}\b/g,
+    pattern: /\b(?:sk-|ghp_|gho_|github_pat_)[a-zA-Z0-9_\-]{10,}\b/g,
     confidence: 'high',
   },
 ];
