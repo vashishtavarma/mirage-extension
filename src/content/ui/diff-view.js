@@ -10,70 +10,73 @@ export function showDiffView(original, sanitized, detections) {
   const shadow = diffHost.attachShadow({ mode: 'open' });
   injectFont(shadow);
 
-  shadow.innerHTML += `
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      .overlay {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.3);
-        z-index: 2147483645;
-        display: flex; align-items: center; justify-content: center;
-        padding: 24px;
-        font-family: ${FONT};
-      }
-      .modal {
-        background: #FFFFFF;
-        border: 1.5px solid #BFBFBF;
-        border-radius: 12px;
-        width: 100%; max-width: 720px; max-height: 80vh;
-        display: flex; flex-direction: column;
-        box-shadow: 0 16px 48px rgba(0,0,0,.14);
-      }
-      .header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 14px 20px; border-bottom: 1px solid #BFBFBF;
-      }
-      .header-title { font-size: 13px; font-weight: 700; color: #000000; }
-      .close {
-        background: none; border: none; color: #7F7F7F;
-        font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px;
-      }
-      .close:hover { background: #f5f5f5; color: #000000; }
-      .cols {
-        display: grid; grid-template-columns: 1fr 1fr;
-        overflow: auto; flex: 1;
-      }
-      .col { padding: 16px 20px; }
-      .col + .col { border-left: 1px solid #BFBFBF; background: #fafafa; }
-      .col-label {
-        font-size: 10px; font-weight: 700; letter-spacing: .08em;
-        text-transform: uppercase; color: #7F7F7F; margin-bottom: 10px;
-      }
-      .text {
-        font-size: 13px; line-height: 1.7; color: #404040;
-        white-space: pre-wrap; word-break: break-word;
-      }
-      .pii-orig {
-        background: #fef3c7; color: #92400e;
-        border-radius: 3px; padding: 0 3px;
-        border-bottom: 1.5px solid #d97706;
-      }
-      .pii-token {
-        background: #dcfce7; color: #166534;
-        border-radius: 3px; padding: 0 3px;
-        font-weight: 700; font-family: monospace; font-size: 11px;
-        border-bottom: 1.5px solid #16a34a;
-      }
-      .footer {
-        padding: 10px 20px; border-top: 1px solid #BFBFBF;
-        font-size: 11px; color: #7F7F7F; text-align: right;
-      }
-    </style>
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(`
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.3);
+      z-index: 2147483645;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      font-family: ${FONT};
+    }
+    .modal {
+      background: #FFFFFF;
+      border: 1.5px solid #BFBFBF;
+      border-radius: 12px;
+      width: 100%; max-width: 720px; max-height: 80vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,.14);
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid #BFBFBF;
+    }
+    .header-title { font-size: 13px; font-weight: 700; color: #000000; }
+    .close {
+      background: none; border: none; color: #7F7F7F;
+      font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    }
+    .close:hover { background: #f5f5f5; color: #000000; }
+    .cols {
+      display: grid; grid-template-columns: 1fr 1fr;
+      overflow: auto; flex: 1;
+    }
+    .col { padding: 16px 20px; }
+    .col + .col { border-left: 1px solid #BFBFBF; background: #fafafa; }
+    .col-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: #7F7F7F; margin-bottom: 10px;
+    }
+    .text {
+      font-size: 13px; line-height: 1.7; color: #404040;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .pii-orig {
+      background: #fef3c7; color: #92400e;
+      border-radius: 3px; padding: 0 3px;
+      border-bottom: 1.5px solid #d97706;
+    }
+    .pii-token {
+      background: #dcfce7; color: #166534;
+      border-radius: 3px; padding: 0 3px;
+      font-weight: 700; font-family: monospace; font-size: 11px;
+      border-bottom: 1.5px solid #16a34a;
+    }
+    .footer {
+      padding: 10px 20px; border-top: 1px solid #BFBFBF;
+      font-size: 11px; color: #7F7F7F; text-align: right;
+    }
+  `);
+  shadow.adoptedStyleSheets = [sheet];
+
+  shadow.innerHTML = `
     <div class="overlay" id="overlay">
       <div class="modal">
         <div class="header">
-          <span class="header-title">Prompt diff — what Privacy Mesh changed</span>
-          <button class="close" id="close">✕</button>
+          <span class="header-title">Prompt diff &#x2014; what Privacy Mesh changed</span>
+          <button class="close" id="close">&#x2715;</button>
         </div>
         <div class="cols">
           <div class="col">

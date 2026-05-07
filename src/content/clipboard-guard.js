@@ -32,47 +32,51 @@ function showClipboardWarning(textarea, originalText, scanResult) {
   guardHost.id = 'pm-clipboard-host';
   const shadow = guardHost.attachShadow({ mode: 'open' });
   injectFont(shadow);
+
   const types = [...new Set(scanResult.detections.map((d) => d.type))];
 
-  shadow.innerHTML += `
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      .toast {
-        position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-        background: #FFFFFF;
-        border: 1.5px solid #BFBFBF;
-        border-top: 3px solid #d97706;
-        border-radius: 10px; padding: 16px 20px;
-        min-width: 340px; max-width: 520px;
-        box-shadow: 0 8px 32px rgba(0,0,0,.12);
-        z-index: 2147483646;
-        font-family: ${FONT};
-        color: #404040;
-        animation: slide-up .2s ease;
-      }
-      @keyframes slide-up {
-        from { opacity:0; transform: translateX(-50%) translateY(12px); }
-      }
-      .title { font-size: 13px; font-weight: 700; color: #000000; margin-bottom: 5px; }
-      .body  { font-size: 12px; color: #7F7F7F; margin-bottom: 12px; }
-      .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
-      .chip  {
-        background: #f5f5f5; border: 1px solid #BFBFBF; color: #404040;
-        border-radius: 3px; padding: 1px 7px; font-size: 10px; font-weight: 700;
-      }
-      .actions { display: flex; gap: 8px; justify-content: flex-end; }
-      button {
-        border-radius: 6px; padding: 7px 14px; font-size: 12px;
-        font-weight: 600; cursor: pointer; border: 1.5px solid;
-        transition: opacity .15s;
-      }
-      button:hover { opacity: .85; }
-      .paste-clean    { background: #000000; border-color: #000000; color: #FFFFFF; }
-      .paste-original { background: #FFFFFF; border-color: #BFBFBF; color: #404040; }
-      .dismiss        { background: transparent; border-color: transparent; color: #7F7F7F; }
-    </style>
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(`
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: #FFFFFF;
+      border: 1.5px solid #BFBFBF;
+      border-top: 3px solid #d97706;
+      border-radius: 10px; padding: 16px 20px;
+      min-width: 340px; max-width: 520px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.12);
+      z-index: 2147483646;
+      font-family: ${FONT};
+      color: #404040;
+      animation: slide-up .2s ease;
+    }
+    @keyframes slide-up {
+      from { opacity:0; transform: translateX(-50%) translateY(12px); }
+    }
+    .title { font-size: 13px; font-weight: 700; color: #000000; margin-bottom: 5px; }
+    .body  { font-size: 12px; color: #7F7F7F; margin-bottom: 12px; }
+    .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 14px; }
+    .chip  {
+      background: #f5f5f5; border: 1px solid #BFBFBF; color: #404040;
+      border-radius: 3px; padding: 1px 7px; font-size: 10px; font-weight: 700;
+    }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    button {
+      border-radius: 6px; padding: 7px 14px; font-size: 12px;
+      font-weight: 600; cursor: pointer; border: 1.5px solid;
+      transition: opacity .15s; font-family: ${FONT};
+    }
+    button:hover { opacity: .85; }
+    .paste-clean    { background: #000000; border-color: #000000; color: #FFFFFF; }
+    .paste-original { background: #FFFFFF; border-color: #BFBFBF; color: #404040; }
+    .dismiss        { background: transparent; border-color: transparent; color: #7F7F7F; }
+  `);
+  shadow.adoptedStyleSheets = [sheet];
+
+  shadow.innerHTML = `
     <div class="toast">
-      <div class="title">📋 PII detected in clipboard</div>
+      <div class="title">&#x1F4CB; PII detected in clipboard</div>
       <div class="body">${scanResult.piiCount} item${scanResult.piiCount !== 1 ? 's' : ''} found in pasted content.</div>
       <div class="chips">${types.map((t) => `<span class="chip">${t}</span>`).join('')}</div>
       <div class="actions">
