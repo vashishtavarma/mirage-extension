@@ -153,10 +153,10 @@ async function renderAuditLog() {
   tbody.innerHTML = '';
 
   if (log.length === 0) {
-    empty.style.display = 'block';
+    empty.classList.remove('hidden');
     return;
   }
-  empty.style.display = 'none';
+  empty.classList.add('hidden');
 
   log.forEach((entry) => {
     const tr = document.createElement('tr');
