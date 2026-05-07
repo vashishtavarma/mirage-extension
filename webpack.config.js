@@ -16,13 +16,6 @@ const plugins = [
   }),
 ];
 
-// wink-nlp requires DOM — cannot run in MV3 service worker.
-// Exclude from production bundle to cut package size by ~3.5 MB.
-// NER runs in the content script context instead.
-if (isProd) {
-  plugins.push(new webpack.IgnorePlugin({ resourceRegExp: /^wink-nlp$/ }));
-  plugins.push(new webpack.IgnorePlugin({ resourceRegExp: /^wink-eng-lite-web-model$/ }));
-}
 
 module.exports = {
   mode: isProd ? 'production' : 'development',
@@ -55,5 +48,9 @@ module.exports = {
 
   resolve: { extensions: ['.js'] },
 
-  optimization: { minimize: isProd },
+  optimization: {
+    minimize: isProd,
+    splitChunks: false,
+    runtimeChunk: false,
+  },
 };
